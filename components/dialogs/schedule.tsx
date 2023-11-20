@@ -5,8 +5,8 @@ import { Schedule as ScheduleTable } from "reports";
 interface ScheduleProps {
   schedule: Columns[];
   van: number;
-  // tir: (a?: number, b?: number, c?: number) => number;
-  tir: number;
+  tir: (a?: number, b?: number, c?: number) => number;
+  // tir: number;
 }
 
 export const Schedule: FC<ScheduleProps> = ({ schedule, van, tir }) => {
@@ -34,7 +34,7 @@ export const Schedule: FC<ScheduleProps> = ({ schedule, van, tir }) => {
         <div className="flex gap-2 items-center">
           <p className="text-body-large">TIR</p>
           <p className="bg-primary text-white p-2 rounded-md">
-            {tir.toFixed(3)}
+            {tir().toFixed(6)}
           </p>
         </div>
       </div>

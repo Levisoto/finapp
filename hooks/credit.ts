@@ -90,6 +90,11 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
       })
       .value();
 
+    const flujos_de_efectivo = [
+      import_prestamo,
+      ...schedule.map((i) => -i.installment),
+    ];
+
     const van =
       schedule.reduce((a, b) => {
         return a + b.installment / Math.pow(1 + rate_interest, b.month);
@@ -105,10 +110,10 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
       let tir_anterior = initial_rate + 0.1;
 
       while (i < max_iterations) {
-        const npv_actual = flujo_efectivo.reduce((a, b, i) => {
+        const npv_actual = flujos_de_efectivo.reduce((a, b, i) => {
           return a + b / Math.pow(1 + tir_actual, i);
         }, 0);
-        const npv_anterior = flujo_efectivo.reduce((a, b, i) => {
+        const npv_anterior = flujos_de_efectivo.reduce((a, b, i) => {
           return a + b / Math.pow(1 + tir_anterior, i);
         }, 0);
 
@@ -117,7 +122,7 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
           (npv_actual * (tir_actual - tir_anterior)) /
             (npv_actual - npv_anterior);
 
-        if (Math.abs(npv_anterior - tir_actual) < tolerancia) {
+        if (Math.abs(nuev_tir - tir_actual) < tolerancia) {
           return nuev_tir;
         }
         tir_anterior = tir_actual;
@@ -126,9 +131,8 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
       }
       return 0;
     };
-    console.log(tir())
 
-    openDialog("open-schedule", { schedule, van, tir: tir() });
+    openDialog("open-schedule", { schedule, van, tir });
   };
 
   return [createCredit];
