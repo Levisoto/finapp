@@ -23,7 +23,8 @@ const schema = yup.object().shape({
     .max(7, "maximo 7")
     .min(1)
     .required("required"),
-  begin_amount: yup.number().typeError("invalid").required("required"),
+  begin_amount_rate: yup.number().typeError("invalid").required("required"),
+  type_grace: yup.string().required("required"),
   grace_period: yup.number().typeError("invalid").required("required"),
 });
 
@@ -34,20 +35,22 @@ export const CreateClient: FC<IClientProps> = () => {
     resolver: yupResolver(schema),
   });
 
-  const { control, handleSubmit, reset } = form;
+  const { control, handleSubmit, watch, reset } = form;
+
+  const type_grace = watch("type_grace", "none");
 
   const onSubmit = (data: FormValues) => {
     try {
       createCredit(data);
-      reset({
-        begin_credit_date: "",
-        price: 0,
-        rate: 0,
-        porte: 0,
-        installments: 0,
-        begin_amount: 0,
-        grace_period: 0,
-      });
+      // reset({
+      //   begin_credit_date: "",
+      //   price: 0,
+      //   rate: 0,
+      //   porte: 0,
+      //   installments: 0,
+      //   begin_amount_rate: 0,
+      //   grace_period: 0,
+      // });
     } catch (err) {
       console.error("Form Client:", err);
     }
@@ -63,6 +66,7 @@ export const CreateClient: FC<IClientProps> = () => {
         <FormField
           control={control}
           name="begin_credit_date"
+          defaultValue="2023-09-22"
           render={({ field }) => (
             <Input
               className="col-span-2"
@@ -75,11 +79,12 @@ export const CreateClient: FC<IClientProps> = () => {
         <FormField
           control={control}
           name="price"
+          defaultValue={30000.0}
           render={({ field }) => (
             <Input
               className="col-span-2"
               type="number"
-              label="Precio del Vehiculo"
+              label="Precio del Vehiculo (S/)"
               {...field}
             />
           )}
@@ -87,6 +92,7 @@ export const CreateClient: FC<IClientProps> = () => {
         <FormField
           control={control}
           name="type_rate"
+          defaultValue="efective"
           render={({ field }) => (
             <SelectInput
               label="Tipo de Tasa"
@@ -107,13 +113,15 @@ export const CreateClient: FC<IClientProps> = () => {
         <FormField
           control={control}
           name="rate"
+          defaultValue={0.1357}
           render={({ field }) => (
-            <Input type="number" label="Tasa" {...field} />
+            <Input type="number" label="Tasa Anual (%)" {...field} />
           )}
         />
         <FormField
           control={control}
           name="porte"
+          defaultValue={5}
           render={({ field }) => (
             <Input
               className="col-span-2"
@@ -126,36 +134,63 @@ export const CreateClient: FC<IClientProps> = () => {
         <FormField
           control={control}
           name="installments"
+          defaultValue={2}
           render={({ field }) => (
             <Input
               className="col-span-2"
               type="number"
-              label="Plazos del Periodo"
+              label="Plazos del Periodo (años)"
               {...field}
             />
           )}
         />
         <FormField
           control={control}
-          name="begin_amount"
+          name="begin_amount_rate"
+          defaultValue={0.15}
           render={({ field }) => (
             <Input
               className="col-span-2"
               type="number"
-              label="Cuota inicial"
+              label="Cuota inicial (%)"
               {...field}
             />
           )}
         />
-
+        <FormField
+          control={control}
+          name="type_grace"
+          defaultValue="none"
+          render={({ field }) => (
+            <SelectInput
+              label="Tipo de Periodo de Gracia"
+              options={[
+                {
+                  label: "Ninguno",
+                  value: "none",
+                },
+                {
+                  label: "Parcial",
+                  value: "partial",
+                },
+                {
+                  label: "total",
+                  value: "Total",
+                },
+              ]}
+              {...field}
+            />
+          )}
+        />
         <FormField
           control={control}
           name="grace_period"
+          defaultValue={0}
           render={({ field }) => (
             <Input
-              className="col-span-2"
               type="number"
               label="Periodos de gracia"
+              disabled={true}
               {...field}
             />
           )}
