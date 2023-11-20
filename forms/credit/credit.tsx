@@ -25,7 +25,7 @@ const schema = yup.object().shape({
     .required("required"),
   begin_amount_rate: yup.number().typeError("invalid").required("required"),
   type_grace: yup.string().required("required"),
-  grace_period: yup.number().typeError("invalid").required("required"),
+  grace_period: yup.number().typeError("invalid"),
 });
 
 export const CreateClient: FC<IClientProps> = () => {
@@ -186,13 +186,9 @@ export const CreateClient: FC<IClientProps> = () => {
           control={control}
           name="grace_period"
           defaultValue={0}
+          disabled={type_grace === "none"}
           render={({ field }) => (
-            <Input
-              type="number"
-              label="Periodos de gracia"
-              disabled={true}
-              {...field}
-            />
+            <Input type="number" label="Periodos de gracia" {...field} />
           )}
         />
         <Button className="col-span-2 w-full mt-4" type="submit">

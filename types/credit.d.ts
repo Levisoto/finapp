@@ -7,7 +7,7 @@ export interface Credit {
   installments: number;
   begin_amount_rate: number;
   type_grace: string;
-  grace_period: number;
+  grace_period?: number;
 }
 
 export interface CreditColumns {
