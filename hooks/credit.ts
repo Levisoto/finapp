@@ -49,13 +49,7 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
     const rate_month = Math.pow(1 + efective_rate, 30 / 360) - 1;
 
     const rate_interest = rate_month + degravamen;
-    const payment_month = getPaymentMonth(
-      a,
-      seguro,
-      import_prestamo,
-      installments_month,
-      rate_interest
-    );
+
     const schedule = _.chain(_.range(0, installments_month))
       .map((_) => {
         return getAmountMonth(import_prestamo, installments_month, rate_month);
@@ -68,6 +62,14 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
             return m - (n - r);
           }, import_prestamo);
 
+        const payment_month = getPaymentMonth(
+          a,
+          seguro,
+          import_prestamo,
+          installments_month,
+          rate_interest
+        );
+
         const rate_amount_month = current_prestamo * rate_month;
         const degravamen_amount_month = current_prestamo * degravamen;
         const amortizacion_amount_month =
@@ -76,6 +78,72 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
           degravamen_amount_month -
           amount_seguro -
           rate_amount_month;
+
+        return {
+          month: k + 1,
+          date: format(addMonths(begin_date, k + 1), "dd.MM.yyyy"),
+          amortizacion: amortizacion_amount_month,
+          interest: rate_amount_month,
+          installment: payment_month,
+          saldo: current_prestamo - (v - rate_amount_month),
+          degravamen: degravamen_amount_month,
+          seguro: amount_seguro,
+        };
+      })
+      .value();
+    console.log(installments_month - (a?.grace_period || 0));
+
+    const schedule_p = _.chain(_.range(0, installments_month))
+      .map((_, k) => {
+        if (k < (a?.grace_period || 0)) {
+          return import_prestamo * rate_month;
+        }
+        return getAmountMonth(
+          import_prestamo,
+          installments_month - (a?.grace_period || 0),
+          rate_month
+        );
+      })
+      .map((v, k) => {
+        const current_prestamo = _.range(0, k)
+          .map((_) => v)
+          .reduce((m, n) => {
+            const r = m * rate_month;
+            if (k < (a?.grace_period || 0)) {
+              return m;
+            }
+            return m - (n - r);
+          }, import_prestamo);
+
+        const payment_month = getPaymentMonth(
+          a,
+          seguro,
+          import_prestamo,
+          installments_month - (a?.grace_period || 0),
+          rate_interest
+        );
+
+        const rate_amount_month = current_prestamo * rate_month;
+        const degravamen_amount_month = current_prestamo * degravamen;
+        const amortizacion_amount_month =
+          payment_month -
+          a.porte -
+          degravamen_amount_month -
+          amount_seguro -
+          rate_amount_month;
+
+        if (k < (a?.grace_period || 0)) {
+          return {
+            month: k + 1,
+            date: format(addMonths(begin_date, k + 1), "dd.MM.yyyy"),
+            amortizacion: 0,
+            interest: rate_amount_month,
+            installment: payment_month,
+            saldo: current_prestamo - (v - rate_amount_month),
+            degravamen: degravamen_amount_month,
+            seguro: amount_seguro,
+          };
+        }
 
         return {
           month: k + 1,
@@ -132,7 +200,7 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
       return 0;
     };
 
-    openDialog("open-schedule", { schedule, van, tir });
+    openDialog("open-schedule", { schedule: schedule, van, tir });
   };
 
   return [createCredit];
