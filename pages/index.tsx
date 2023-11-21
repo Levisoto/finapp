@@ -28,7 +28,9 @@ const Home = () => {
           <nav className="flex">
             <div className="flex gap-10 items-center">
               <Link href="/dashboard" className="text-white">
-                <Button variant="secondary">App</Button>
+                <Button variant="ghost" className="bg-[#4C49ED] text-white">
+                  Ir a la app
+                </Button>
               </Link>
             </div>
           </nav>

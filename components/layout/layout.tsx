@@ -1,5 +1,5 @@
 import React, { FC, PropsWithChildren } from "react";
-import { AccountControls, Container } from "components/ui";
+import { AccountControls } from "components/ui";
 
 interface LayoutProps extends PropsWithChildren {
   prop?: string;
@@ -7,12 +7,16 @@ interface LayoutProps extends PropsWithChildren {
 
 export const Layout: FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen overflow-y-auto flex flex-col">
-      <Container className="relative">
-        <div className="absolute right-10 top-5">
+    <div className="h-full overflow-y-auto flex flex-col px-16 py-14">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-10">
+          <img src="logo.svg" className="w-[200px] h-full" />
+          <p className="text-4xl">Crédito</p>
+        </div>
+        <div className="self-start">
           <AccountControls />
         </div>
-      </Container>
+      </div>
       {children}
     </div>
   );
