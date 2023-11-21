@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { AddCreditFormValues as FormValues } from "types";
-import { Form, FormField, InputCustom } from "components/ui";
+import { Form, FormField } from "components/ui";
 import { Input, SelectInput, Button } from "components/ui";
 import { useCreateCredit } from "hooks";
 
@@ -191,7 +191,7 @@ export const CreateClient: FC<IClientProps> = () => {
             <Input type="number" label="Periodos de gracia" {...field} />
           )}
         />
-        <Button className="col-span-2 w-full mt-4" type="submit">
+        <Button className="bg-[#4C49ED] col-span-2 w-full mt-4" type="submit">
           Ver cronograma de pagos
         </Button>
       </form>

@@ -45,7 +45,7 @@ export const AccountControls: FC<IAccountControlsProps> = () => {
         className="
         flex items-center justify-center h-[50px] w-[50px]
         rounded-full
-        bg-primary
+        bg-[#4C49ED]
         "
       >
         <p
