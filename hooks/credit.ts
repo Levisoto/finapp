@@ -2,6 +2,7 @@ import { AddCreditFormValues as AddCredit, CreditColumns } from "types";
 import _ from "lodash";
 import { useDialog } from "utils/dialog";
 import { parse, addMonths, format } from "date-fns";
+import { getSchedule, getTir, getVan } from "utils/helpers";
 
 const getEfectiveRate = (type: string, a: number, n: number) => {
   if (type === "nominal") {
@@ -29,8 +30,6 @@ const getPaymentMonth = (
   return amount_port;
 };
 
-const flujo_efectivo = [-1000, 200, 300, 400, 500];
-
 export const useCreateCredit = (): [(a: AddCredit) => void] => {
   const { openDialog } = useDialog();
 
@@ -50,52 +49,9 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
 
     const rate_interest = rate_month + degravamen;
 
-    const schedule = _.chain(_.range(0, installments_month))
-      .map((_) => {
-        return getAmountMonth(import_prestamo, installments_month, rate_month);
-      })
-      .map((v, k) => {
-        const current_prestamo = _.range(0, k)
-          .map((_) => v)
-          .reduce((m, n) => {
-            const r = m * rate_month;
-            return m - (n - r);
-          }, import_prestamo);
-
-        const payment_month = getPaymentMonth(
-          a,
-          seguro,
-          import_prestamo,
-          installments_month,
-          rate_interest
-        );
-
-        const rate_amount_month = current_prestamo * rate_month;
-        const degravamen_amount_month = current_prestamo * degravamen;
-        const amortizacion_amount_month =
-          payment_month -
-          a.porte -
-          degravamen_amount_month -
-          amount_seguro -
-          rate_amount_month;
-
-        return {
-          month: k + 1,
-          date: format(addMonths(begin_date, k + 1), "dd.MM.yyyy"),
-          amortizacion: amortizacion_amount_month,
-          interest: rate_amount_month,
-          installment: payment_month,
-          saldo: current_prestamo - (v - rate_amount_month),
-          degravamen: degravamen_amount_month,
-          seguro: amount_seguro,
-        };
-      })
-      .value();
-    console.log(installments_month - (a?.grace_period || 0));
-
     const schedule_p = _.chain(_.range(0, installments_month))
       .map((_, k) => {
-        if (k < (a?.grace_period || 0)) {
+        if (k <= (a?.grace_period || 0)) {
           return import_prestamo * rate_month;
         }
         return getAmountMonth(
@@ -108,11 +64,12 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
         const current_prestamo = _.range(0, k)
           .map((_) => v)
           .reduce((m, n) => {
-            const r = m * rate_month;
             if (k < (a?.grace_period || 0)) {
               return m;
             }
-            return m - (n - r);
+            const r = m * rate_month;
+            const amortizacion = n - r;
+            return m - amortizacion;
           }, import_prestamo);
 
         const payment_month = getPaymentMonth(
@@ -158,49 +115,43 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
       })
       .value();
 
-    const flujos_de_efectivo = [
-      import_prestamo,
-      ...schedule.map((i) => -i.installment),
-    ];
-
-    const van =
-      schedule.reduce((a, b) => {
-        return a + b.installment / Math.pow(1 + rate_interest, b.month);
-      }, 0) - import_prestamo;
-
-    const tir = (
-      initial_rate: number = 0.1,
-      tolerancia: number = 1e-6,
-      max_iterations: number = 1000
-    ) => {
-      let i = 0;
-      let tir_actual = initial_rate;
-      let tir_anterior = initial_rate + 0.1;
-
-      while (i < max_iterations) {
-        const npv_actual = flujos_de_efectivo.reduce((a, b, i) => {
-          return a + b / Math.pow(1 + tir_actual, i);
-        }, 0);
-        const npv_anterior = flujos_de_efectivo.reduce((a, b, i) => {
-          return a + b / Math.pow(1 + tir_anterior, i);
-        }, 0);
-
-        const nuev_tir =
-          tir_actual -
-          (npv_actual * (tir_actual - tir_anterior)) /
-            (npv_actual - npv_anterior);
-
-        if (Math.abs(nuev_tir - tir_actual) < tolerancia) {
-          return nuev_tir;
+    const schedule = () => {
+      switch (a.type_grace) {
+        case "none": {
+          return getSchedule(
+            a,
+            import_prestamo,
+            installments_month,
+            rate_month
+          );
         }
-        tir_anterior = tir_actual;
-        tir_actual = nuev_tir;
-        i++;
+        case "partial": {
+          return schedule_p;
+        }
+        case "total": {
+          return schedule_p;
+        }
+        default: {
+          return getSchedule(
+            a,
+            import_prestamo,
+            installments_month,
+            rate_month
+          );
+        }
       }
-      return 0;
     };
 
-    openDialog("open-schedule", { schedule: schedule, van, tir });
+    const flujos_de_efectivo = [
+      import_prestamo,
+      ...schedule().map((i) => -i.installment),
+    ];
+
+    const van = getVan(import_prestamo, schedule(), rate_interest);
+
+    const tir = getTir(flujos_de_efectivo);
+
+    openDialog("open-schedule", { schedule: schedule_p, van, tir });
   };
 
   return [createCredit];
