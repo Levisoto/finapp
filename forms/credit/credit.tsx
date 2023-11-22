@@ -174,8 +174,8 @@ export const CreateClient: FC<IClientProps> = () => {
                   value: "partial",
                 },
                 {
-                  label: "total",
-                  value: "Total",
+                  label: "Total",
+                  value: "total",
                 },
               ]}
               {...field}

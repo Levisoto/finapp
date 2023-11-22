@@ -8,13 +8,36 @@ const getAmountMonth = (a: number, n: number, r: number) => {
   return (a * r) / (1 - m);
 };
 
-const getPaymentMonth = (
+export const getPaymentMonth = (
   m: AddCredit,
   s: number,
   a: number,
   n: number,
-  r: number
+  r: number,
+  month?: number
 ) => {
+  if (
+    m.type_grace === "total" &&
+    m.grace_period &&
+    month !== undefined &&
+    m.grace_period > month
+  ) {
+    const amount = 0;
+    const amount_seguro = amount + s * m.price;
+    const amount_port = amount_seguro + m.porte;
+    return amount_port;
+  }
+  if (
+    m.type_grace === "partial" &&
+    m.grace_period &&
+    month !== undefined &&
+    m.grace_period > month
+  ) {
+    const amount = a * r;
+    const amount_seguro = amount + s * m.price;
+    const amount_port = amount_seguro + m.porte;
+    return amount_port;
+  }
   const amount = getAmountMonth(a, n, r);
   const amount_seguro = amount + s * m.price;
   const amount_port = amount_seguro + m.porte;
@@ -26,7 +49,8 @@ export const getSchedule = (
   a: AddCredit,
   importe_prestamo: number,
   installments: number,
-  rate_month: number
+  rate_month: number,
+  rate_interest: number
 ) => {
   const [degravamen, seguro] = useGetParameters();
   const amount_seguro = a.price * seguro;
@@ -49,7 +73,8 @@ export const getSchedule = (
         seguro,
         importe_prestamo,
         installments,
-        rate_month
+        rate_interest,
+        current_prestamo * degravamen
       );
 
       const rate_amount_month = current_prestamo * rate_month;
@@ -68,6 +93,71 @@ export const getSchedule = (
         interest: rate_amount_month,
         installment: payment_month,
         saldo: current_prestamo - (v - rate_amount_month),
+        degravamen: degravamen_amount_month,
+        seguro: amount_seguro,
+      };
+    })
+    .value();
+};
+export const getSchedulePartial = (
+  a: AddCredit,
+  importe_prestamo: number,
+  installments: number,
+  rate_month: number,
+  rate_interest: number
+) => {
+  const [degravamen, seguro] = useGetParameters();
+  const amount_seguro = a.price * seguro;
+  const begin_date = parse(a.begin_credit_date, "yyyy-MM-dd", new Date());
+
+  return _.chain(_.range(0, installments))
+    .map((c, k) => {
+      const all = _.range(0, installments).map((_, k) => {
+        if (k < (a?.grace_period || 0)) {
+          return importe_prestamo * rate_month;
+        }
+        return getAmountMonth(
+          importe_prestamo,
+          installments - (a?.grace_period || 0),
+          rate_month
+        );
+      });
+      const current_prestamo = all.slice(0, k + 1).reduce((m, n, i) => {
+        if (k < (a?.grace_period || 0)) {
+          return m;
+        }
+        const r = m * rate_month;
+        const amortizacion = n - r;
+
+        return m - amortizacion;
+      }, importe_prestamo);
+
+      const payment_month = getPaymentMonth(
+        a,
+        seguro,
+        importe_prestamo,
+        installments - (a?.grace_period || 0),
+        rate_interest,
+        k
+      );
+
+      const interest_amount_month = current_prestamo * rate_month;
+      const degravamen_amount_month = current_prestamo * degravamen;
+
+      const amortizacion_amount_month =
+        payment_month -
+        a.porte -
+        degravamen_amount_month -
+        amount_seguro -
+        interest_amount_month;
+
+      return {
+        month: k + 1,
+        date: format(addMonths(begin_date, k + 1), "dd.MM.yyyy"),
+        amortizacion: amortizacion_amount_month,
+        interest: interest_amount_month,
+        installment: payment_month,
+        saldo: current_prestamo,
         degravamen: degravamen_amount_month,
         seguro: amount_seguro,
       };
