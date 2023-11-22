@@ -144,8 +144,6 @@ export const useCreateCredit = (): [(a: AddCredit) => void] => {
       ...schedule().map((i: CreditColumns) => -i.installment),
     ];
 
-    console.log(flujos_de_efectivo);
-
     const van = getVan(import_prestamo, schedule(), rate_interest);
 
     const tir = getTir(flujos_de_efectivo);
